@@ -4,6 +4,7 @@ using System.Reflection;
 using JBHiFi.Samir.Core.Queries;
 using JBHiFi.Samir.Core.Services;
 using JBHiFi.Samir.Web.Docs;
+using JBHiFi.Samir.Web.HttpRequestMiddleware;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -34,7 +35,7 @@ namespace JBHiFi.Samir.Web
             ConfigureApiVersioning();
             ConfigureApiDocumentation();
             ConfigureMediatR();
-            ConfigureHttpClient();
+            ConfigureOpenWeatherApiHttpClient();
 
             // Local functions
             void ConfigureControllers()
@@ -76,10 +77,17 @@ namespace JBHiFi.Samir.Web
                 services.AddMediatR(typeof(CurrentWeather));
             }
 
-            void ConfigureHttpClient()
+            void ConfigureOpenWeatherApiHttpClient()
             {
+                services.Configure<OpenWeatherMapApiOptions>(Configuration.GetSection("OpenWeatherMapApi"));
+
+                services.AddTransient<IOpenWeatherMapApiKeyProvider, RandomOpenWeatherMapApiKeyProvider>();
+
+                services.AddTransient<OpenWeatherApiAuthHandler>();
+
                 services.AddRefitClient<IOpenWeatherMapApi>()
-                    .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.openweathermap.org"));
+                    .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.openweathermap.org"))
+                    .AddHttpMessageHandler<OpenWeatherApiAuthHandler>();
             }
         }
 
