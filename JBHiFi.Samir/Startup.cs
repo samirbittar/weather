@@ -1,8 +1,15 @@
+using System.IO;
+using System.Reflection;
+using JBHiFi.Samir.Docs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.PlatformAbstractions;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace JBHiFi.Samir
 {
@@ -17,14 +24,51 @@ namespace JBHiFi.Samir
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllersWithViews();
+            ConfigureControllers();
+            ConfigureSpa();
+            ConfigureApiVersioning();
+            ConfigureApiDocumentation();
 
-            services.AddSpaStaticFiles(configuration => { configuration.RootPath = "ClientApp/dist"; });
+            // Local functions
+            void ConfigureControllers()
+            {
+                services.AddControllersWithViews();
+            }
 
-            services.AddApiVersioning();
+            void ConfigureSpa()
+            {
+                services.AddSpaStaticFiles(configuration => { configuration.RootPath = "ClientApp/dist"; });
+            }
+
+            void ConfigureApiVersioning()
+            {
+                services.AddApiVersioning(options => options.ReportApiVersions = true);
+                services.AddVersionedApiExplorer(options =>
+                {
+                    options.GroupNameFormat = "'v'VV"; // This format results in a version such as "v1.0"
+                    options.SubstituteApiVersionInUrl = true; // Required for versioning by URL segment, e.g. api/v1.0/weatherforecast
+                });
+            }
+
+            void ConfigureApiDocumentation()
+            {
+                services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
+                services.AddSwaggerGen(options =>
+                {
+                    options.OperationFilter<SwaggerDefaultValues>();
+                    options.IncludeXmlComments(GetXmlCommentsFilePath());
+                });
+            }
+
+            string GetXmlCommentsFilePath()
+            {
+                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
+                var fileName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name + ".xml";
+                return Path.Combine(basePath, fileName);
+            }
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider apiVersionDescriptionProvider)
         {
             if (env.IsDevelopment())
             {
@@ -51,6 +95,15 @@ namespace JBHiFi.Samir
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
+            });
+
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                {
+                    options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+                }
             });
 
             app.UseSpa(spa =>
