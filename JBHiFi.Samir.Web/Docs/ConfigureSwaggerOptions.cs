@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace JBHiFi.Samir.Docs
+namespace JBHiFi.Samir.Web.Docs
 {
     // Based on https://github.com/dotnet/aspnet-api-versioning/blob/master/samples/aspnetcore/SwaggerSample/ConfigureSwaggerOptions.cs
     public class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOptions>

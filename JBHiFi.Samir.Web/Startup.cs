@@ -1,6 +1,10 @@
+using System;
 using System.IO;
 using System.Reflection;
-using JBHiFi.Samir.Docs;
+using JBHiFi.Samir.Core.Queries;
+using JBHiFi.Samir.Core.Services;
+using JBHiFi.Samir.Web.Docs;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
@@ -9,9 +13,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.PlatformAbstractions;
+using Refit;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace JBHiFi.Samir
+namespace JBHiFi.Samir.Web
 {
     public class Startup
     {
@@ -28,6 +33,8 @@ namespace JBHiFi.Samir
             ConfigureSpa();
             ConfigureApiVersioning();
             ConfigureApiDocumentation();
+            ConfigureMediatR();
+            ConfigureHttpClient();
 
             // Local functions
             void ConfigureControllers()
@@ -52,19 +59,27 @@ namespace JBHiFi.Samir
 
             void ConfigureApiDocumentation()
             {
+                var applicationBasePath = PlatformServices.Default.Application.ApplicationBasePath;
+                var xmlCommentsFileName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name + ".xml";
+                var xmlCommentsFilePath = Path.Combine(applicationBasePath, xmlCommentsFileName);
+
                 services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
                 services.AddSwaggerGen(options =>
                 {
                     options.OperationFilter<SwaggerDefaultValues>();
-                    options.IncludeXmlComments(GetXmlCommentsFilePath());
+                    options.IncludeXmlComments(xmlCommentsFilePath);
                 });
             }
 
-            string GetXmlCommentsFilePath()
+            void ConfigureMediatR()
             {
-                var basePath = PlatformServices.Default.Application.ApplicationBasePath;
-                var fileName = typeof(Startup).GetTypeInfo().Assembly.GetName().Name + ".xml";
-                return Path.Combine(basePath, fileName);
+                services.AddMediatR(typeof(CurrentWeather));
+            }
+
+            void ConfigureHttpClient()
+            {
+                services.AddRefitClient<IOpenWeatherMapApi>()
+                    .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.openweathermap.org"));
             }
         }
 
