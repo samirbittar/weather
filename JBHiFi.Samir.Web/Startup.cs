@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.PlatformAbstractions;
+using Polly;
 using Refit;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -87,7 +88,11 @@ namespace JBHiFi.Samir.Web
 
                 services.AddRefitClient<IOpenWeatherMapApi>()
                     .ConfigureHttpClient(c => c.BaseAddress = new Uri("https://api.openweathermap.org"))
-                    .AddHttpMessageHandler<OpenWeatherApiAuthHandler>();
+                    .AddHttpMessageHandler<OpenWeatherApiAuthHandler>()
+                    .AddTransientHttpErrorPolicy(
+                        p => p.WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)))
+                    )
+                    .AddTransientHttpErrorPolicy(p => p.CircuitBreakerAsync(5, TimeSpan.FromSeconds(30)));
             }
         }
 
