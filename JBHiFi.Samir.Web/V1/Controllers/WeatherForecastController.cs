@@ -29,11 +29,12 @@ namespace JBHiFi.Samir.Web.V1.Controllers
         /// <param name="countryCode">The ISO-3166 country code.</param>
         /// <returns></returns>
         [HttpGet("current")]
-        [Produces("application/json")]
+        [Produces("application/json", "text/plain")]
         [ProducesResponseType(typeof(CurrentWeatherResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status429TooManyRequests)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
         public async Task<IActionResult> Current(string cityName, string countryCode, CancellationToken cancellationToken)
