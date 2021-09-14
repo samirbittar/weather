@@ -1,6 +1,8 @@
+using System.IO;
 using System.Threading.Tasks;
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -23,6 +25,16 @@ namespace JBHiFi.Samir.Web
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
+                .ConfigureAppConfiguration((context, builder) =>
+                {
+                    BuildConfigurationSettings(builder);
+                });
+
+        public static IConfigurationBuilder BuildConfigurationSettings(IConfigurationBuilder builder) =>
+            builder.SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", false, true)
+                .AddJsonFile("appsettings.Development.json", true, true)
+                .AddEnvironmentVariables();
     }
 }
