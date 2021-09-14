@@ -5,5 +5,5 @@ import { Component } from '@angular/core';
   templateUrl: './app.component.html'
 })
 export class AppComponent {
-  title = 'app';
+  title = 'JB Hi-Fi - Technical Challenge - Samir Bittar Rosas';
 }

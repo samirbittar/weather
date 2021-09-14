@@ -5,4 +5,10 @@ import { Component } from '@angular/core';
   templateUrl: './home.component.html',
 })
 export class HomeComponent {
+  cityName: string;
+  countryCode: string;
+
+  getWeather(): void {
+
+  }
 }
