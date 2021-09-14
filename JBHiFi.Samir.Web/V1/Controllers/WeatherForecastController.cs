@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using JBHiFi.Samir.Core.Queries;
@@ -31,11 +30,12 @@ namespace JBHiFi.Samir.Web.V1.Controllers
         /// <returns></returns>
         [HttpGet("current")]
         [Produces("application/json")]
-        [ProducesResponseType(typeof(CurrentWeatherResponse), (int)HttpStatusCode.OK)]
-        [ProducesResponseType(typeof(ValidationProblemDetails), (int)HttpStatusCode.BadRequest)]
-        [ProducesResponseType(typeof(ProblemDetails), (int)HttpStatusCode.NotFound)]
-        [ProducesResponseType(typeof(ProblemDetails), (int)HttpStatusCode.InternalServerError)]
-        [ProducesResponseType(typeof(ProblemDetails), (int)HttpStatusCode.ServiceUnavailable)]
+        [ProducesResponseType(typeof(CurrentWeatherResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
         public async Task<IActionResult> Current(string cityName, string countryCode, CancellationToken cancellationToken)
         {
             if (!ValidateParameters(out var validationErrors))

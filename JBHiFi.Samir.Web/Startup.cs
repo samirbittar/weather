@@ -1,19 +1,24 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using AspNetCoreRateLimit;
 using JBHiFi.Samir.Core.Queries;
 using JBHiFi.Samir.Core.Services;
 using JBHiFi.Samir.Web.Docs;
 using JBHiFi.Samir.Web.HttpRequestMiddleware;
+using JBHiFi.Samir.Web.Infrastructure.Middleware;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.OpenApi.Models;
 using Polly;
 using Refit;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -31,6 +36,9 @@ namespace JBHiFi.Samir.Web
 
         public void ConfigureServices(IServiceCollection services)
         {
+            ConfigureOptions();
+            ConfigureCache();
+            ConfigureRateLimiting();
             ConfigureControllers();
             ConfigureSpa();
             ConfigureApiVersioning();
@@ -39,6 +47,27 @@ namespace JBHiFi.Samir.Web
             ConfigureOpenWeatherApiHttpClient();
 
             // Local functions
+            void ConfigureOptions()
+            {
+                services.AddOptions();
+            }
+
+            void ConfigureCache()
+            {
+                services.AddMemoryCache();
+            }
+
+            void ConfigureRateLimiting()
+            {
+                services.Configure<ClientRateLimitOptions>(Configuration.GetSection("ClientRateLimiting"));
+                services.Configure<ClientRateLimitPolicies>(Configuration.GetSection("ClientRateLimitPolicies"));
+
+                services.AddInMemoryRateLimiting();
+
+                services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+                services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+            }
+
             void ConfigureControllers()
             {
                 services.AddControllersWithViews();
@@ -54,7 +83,7 @@ namespace JBHiFi.Samir.Web
                 services.AddApiVersioning(options => options.ReportApiVersions = true);
                 services.AddVersionedApiExplorer(options =>
                 {
-                    options.GroupNameFormat = "'v'VV"; // This format results in a version such as "v1.0"
+                    options.GroupNameFormat = "'v'VVV"; // This format results in a version such as "v1.0"
                     options.SubstituteApiVersionInUrl = true; // Required for versioning by URL segment, e.g. api/v1.0/weatherforecast
                 });
             }
@@ -70,6 +99,29 @@ namespace JBHiFi.Samir.Web
                 {
                     options.OperationFilter<SwaggerDefaultValues>();
                     options.IncludeXmlComments(xmlCommentsFilePath);
+                    options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
+                    {
+                        Type = SecuritySchemeType.ApiKey,
+                        In = ParameterLocation.Header,
+                        Name = "X-ApiKey",
+                        Description = "Authorization by request header X-ApiKey",
+                        Scheme = "ApiKeyScheme"
+                    });
+
+                    var key = new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "ApiKey"
+                        },
+                        In = ParameterLocation.Header
+                    };
+                    var requirement = new OpenApiSecurityRequirement
+                    {
+                        { key, new List<string>() }
+                    };
+                    options.AddSecurityRequirement(requirement);
                 });
             }
 
@@ -98,6 +150,9 @@ namespace JBHiFi.Samir.Web
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider apiVersionDescriptionProvider)
         {
+            app.UseApiKeyVerification();
+            app.UseClientRateLimiting();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
