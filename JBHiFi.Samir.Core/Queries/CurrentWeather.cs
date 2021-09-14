@@ -4,6 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using JBHiFi.Samir.Core.Services;
 using MediatR;
+using Polly.CircuitBreaker;
+using Refit;
 
 namespace JBHiFi.Samir.Core.Queries
 {
@@ -26,6 +28,7 @@ namespace JBHiFi.Samir.Core.Queries
             public static QueryResult Success(string description) => new(StatusResultValues.Success, description: description);
             public static QueryResult NotFound() => new(StatusResultValues.NotFound);
             public static QueryResult Error(string errorMessage) => new(StatusResultValues.Error, errorMessage: errorMessage);
+            public static QueryResult ServiceUnavailable() => new(StatusResultValues.ServiceUnavailable);
 
             private QueryResult(StatusResultValues status, string description = null, string errorMessage = null)
             {
@@ -43,6 +46,7 @@ namespace JBHiFi.Samir.Core.Queries
             {
                 Success,
                 NotFound,
+                ServiceUnavailable,
                 Error
             }
         }
@@ -58,7 +62,16 @@ namespace JBHiFi.Samir.Core.Queries
 
             public async Task<QueryResult> Handle(Query request, CancellationToken cancellationToken)
             {
-                var apiResponse = await _weatherApi.GetCurrentWeather(request.CityName, request.CountryCode);
+                ApiResponse<CurrentWeatherApiResponse> apiResponse;
+                try
+                {
+                    apiResponse = await _weatherApi.GetCurrentWeatherAsync(request.CityName, request.CountryCode, cancellationToken);
+                }
+                catch (BrokenCircuitException)
+                {
+                    return QueryResult.ServiceUnavailable();
+                }
+
                 if (apiResponse.IsSuccessStatusCode)
                 {
                     var weatherDescription = apiResponse.Content?.Weather.FirstOrDefault()?.Description;
