@@ -27,9 +27,23 @@ To build / run / test the application, you need to install:
 
 ### Build
 
-1. Open a command line window
-2. Navigate to the root directory of the repository
-3. Run `dotnet build`
+1. Create a file called `appsettings.Development.json` inside the `Weather.Web` directory. Include the content below into the file:
+
+```json
+{
+    "OpenWeatherMapApi": {
+        "ApiKeys": [
+            "REPLACE_WITH_YOUR_API_KEY_1",
+            "REPLACE_WITH_YOUR_API_KEY_2"
+        ]
+    }
+}
+```
+
+2. Open a command line window
+3. Navigate to the root directory of the repository
+4. Run `dotnet build`.
+5. If you run into `npm` errors, just run the `dotnet build` command again. It should work.
 
 ### Run
 
@@ -37,13 +51,13 @@ To build / run / test the application, you need to install:
 2. Navigate to the root directory of the repository
 3. Run `dotnet run --project Weather.Web`
 4. Open your browser and navigate to `https://localhost:5001`
-5. You can view API documentation on `https://localhost:5001/swagger`
+5. You can view API documentation on `https://localhost:5001/swagger`. You can also use this page to test rate limiting with the different API keys.
 
 ### Test
 
 1. Open a command line window
 2. Navigate to the root directory of the repository
-3. Run `dotnet test`
+3. Run `dotnet test -v n`
 
 ## Test cases:
 
